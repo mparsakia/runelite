@@ -43,6 +43,8 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.menus.TestMenuEntry;
 import net.runelite.client.ui.components.colorpicker.ColorPickerManager;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.util.ColorUtil;
+import net.runelite.client.game.npcoverlay.HighlightedNpc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -94,15 +96,49 @@ public class NpcIndicatorsPluginTest
 	@Test
 	public void getHighlights()
 	{
-		when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("goblin, , zulrah   , *wyvern, ,");
-		final List<String> highlightedNpcs = npcIndicatorsPlugin.getHighlights();
-		assertEquals("Length of parsed NPCs is incorrect", 3, highlightedNpcs.size());
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("goblin, , zulrah   , *wyvern, ,");
+               final List<NpcMatch> highlightedNpcs = npcIndicatorsPlugin.getHighlights();
+               assertEquals("Length of parsed NPCs is incorrect", 3, highlightedNpcs.size());
 
-		final Iterator<String> iterator = highlightedNpcs.iterator();
-		assertEquals("goblin", iterator.next());
-		assertEquals("zulrah", iterator.next());
-		assertEquals("*wyvern", iterator.next());
-	}
+               final Iterator<NpcMatch> iterator = highlightedNpcs.iterator();
+               assertEquals("goblin", iterator.next().getPattern());
+               assertEquals("zulrah", iterator.next().getPattern());
+               assertEquals("*wyvern", iterator.next().getPattern());
+       }
+
+       @Test
+       public void parseAttributes()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<col=00ffff npcid=1234 drawname=false>Rubble</col>");
+               final List<NpcMatch> highlightedNpcs = npcIndicatorsPlugin.getHighlights();
+               assertEquals(1, highlightedNpcs.size());
+               NpcMatch match = highlightedNpcs.get(0);
+               assertEquals("Rubble", match.getPattern());
+               assertEquals(Integer.valueOf(1234), match.getNpcId());
+               assertEquals(ColorUtil.fromHex("00ffff"), match.getColor());
+               assertEquals(Boolean.FALSE, match.getDrawName());
+       }
+
+       @Test
+       public void highlightByNpcIdOverride()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<col=ff0000 npcid=1 drawname=true></col>");
+               when(npcIndicatorsConfig.drawNames()).thenReturn(false);
+               when(npcIndicatorsConfig.drawMinimapNames()).thenReturn(false);
+
+               npcIndicatorsPlugin.rebuild();
+
+               NPC npc = mock(NPC.class);
+               when(npc.getName()).thenReturn("Any");
+               when(npc.getId()).thenReturn(1);
+
+               npcIndicatorsPlugin.onNpcSpawned(new NpcSpawned(npc));
+
+               HighlightedNpc highlighted = npcIndicatorsPlugin.getHighlightedNpcs().get(npc);
+               assertTrue(highlighted.isName());
+               assertTrue(highlighted.isNameOnMinimap());
+               assertEquals(ColorUtil.fromHex("ff0000"), highlighted.getHighlightColor());
+       }
 
 	@Test
 	public void testDeadNpcMenuHighlight()
