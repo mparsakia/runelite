@@ -50,6 +50,12 @@ class NpcMatch
        {
                String trimmed = config.trim();
 
+               // Discard obvious malformed tokens such as truncated tags
+               if (trimmed.contains("<") && !trimmed.contains(">"))
+               {
+                       return null;
+               }
+
                if (trimmed.startsWith("<") && trimmed.contains(">"))
                {
                        int end = trimmed.indexOf('>');
@@ -83,7 +89,13 @@ class NpcMatch
                                switch (kv[0].toLowerCase())
                                {
                                        case "col":
-                                               color = ColorUtil.fromHex(kv[1]);
+                                               try
+                                               {
+                                                       color = ColorUtil.fromHex(kv[1]);
+                                               }
+                                               catch (IllegalArgumentException ignored)
+                                               {
+                                               }
                                                break;
                                        case "npcid":
                                                try
@@ -100,13 +112,25 @@ class NpcMatch
                                }
                        }
 
+                       if (npcId != null)
+                       {
+                               // When targeting by id the inner text is ignored
+                               pattern = null;
+                       }
+
+                       if (npcId == null && pattern == null)
+                       {
+                               // No match criteria
+                               return null;
+                       }
+
                        return new NpcMatch(pattern, npcId, color, drawName);
                }
 
                String pattern = Text.removeTags(trimmed).trim();
                if (pattern.isEmpty())
                {
-                       pattern = null;
+                       return null;
                }
                return new NpcMatch(pattern, null, null, null);
        }
