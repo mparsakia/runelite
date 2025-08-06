@@ -899,15 +899,10 @@ public class NpcIndicatorsPlugin extends Plugin
 			outline = config.highlightOutline();
 		}
 
-               Color highlightColor = getNpcHighlightColor(npcId);
-               if (highlightColor == null)
-               {
-                       highlightColor = match != null ? match.getColor() : null;
-               }
-               if (highlightColor == null)
-               {
-                       highlightColor = config.highlightColor();
-               }
+			Color highlightColor = MoreObjects.firstNonNull(
+				getNpcHighlightColor(npcId),
+				match != null && match.getColor() != null ? match.getColor() : config.highlightColor()
+			);
 
                boolean drawName = match != null && match.getDrawName() != null ? match.getDrawName() : config.drawNames();
                boolean drawMinimap = match != null && match.getDrawName() != null ? match.getDrawName() : config.drawMinimapNames();
