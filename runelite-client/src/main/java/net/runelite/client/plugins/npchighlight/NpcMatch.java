@@ -52,8 +52,14 @@ class NpcMatch
        {
                String trimmed = config.trim();
 
+               if (trimmed.isEmpty())
+               {
+                       return null;
+               }
+
                // Discard obvious malformed tokens such as truncated tags
-               if (trimmed.contains("<") && !trimmed.contains(">"))
+               if ((trimmed.contains("<") && !trimmed.contains(">")) ||
+                       (trimmed.contains(">") && !trimmed.contains("<")))
                {
                        return null;
                }
@@ -132,6 +138,89 @@ class NpcMatch
                        }
 
                        return new NpcMatch(pattern, npcId, color, drawName, drawMap);
+               }
+               else if (trimmed.startsWith("<col") && trimmed.contains(">"))
+               {
+                       int end = trimmed.indexOf('>');
+                       String attrsPart = trimmed.substring("<col".length(), end).trim();
+                       String content = trimmed.substring(end + 1);
+
+                       if (!content.endsWith("</col>"))
+                       {
+                               return null; // malformed tag
+                       }
+                       content = content.substring(0, content.length() - "</col>".length());
+
+                       String pattern = Text.removeTags(content).trim();
+                       if (pattern.isEmpty())
+                       {
+                               pattern = null;
+                       }
+
+                       Integer npcId = null;
+                       Color color = null;
+                       Boolean drawName = null;
+
+                       if (attrsPart.startsWith("="))
+                       {
+                               attrsPart = attrsPart.substring(1).trim();
+                       }
+
+                       if (!attrsPart.isEmpty())
+                       {
+                               String[] attrs = attrsPart.split("\\s+");
+                               if (attrs.length > 0)
+                               {
+                                       try
+                                       {
+                                               color = ColorUtil.fromHex(attrs[0]);
+                                       }
+                                       catch (IllegalArgumentException ignored)
+                                       {
+                                       }
+
+                                       for (int i = 1; i < attrs.length; i++)
+                                       {
+                                               String[] kv = attrs[i].split("=", 2);
+                                               if (kv.length < 2)
+                                               {
+                                                       continue;
+                                               }
+                                               switch (kv[0].toLowerCase())
+                                               {
+                                                       case "npcid":
+                                                               try
+                                                               {
+                                                                       npcId = Integer.parseInt(kv[1]);
+                                                               }
+                                                               catch (NumberFormatException ignored)
+                                                               {
+                                                               }
+                                                               break;
+                                                       case "drawname":
+                                                               drawName = Boolean.parseBoolean(kv[1]);
+                                                               break;
+                                               }
+                                       }
+                               }
+                       }
+
+                       if (npcId != null)
+                       {
+                               pattern = null;
+                       }
+
+                       if (npcId == null && pattern == null)
+                       {
+                               return null;
+                       }
+
+                       return new NpcMatch(pattern, npcId, color, drawName, null);
+               }
+               else if (trimmed.contains("<") || trimmed.contains(">"))
+               {
+                       // Stray angle brackets indicate a malformed token
+                       return null;
                }
 
                String pattern = Text.removeTags(trimmed).trim();
