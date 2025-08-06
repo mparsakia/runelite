@@ -43,8 +43,10 @@ class NpcMatch
        Integer npcId;
        /** Optional highlight colour. */
        Color color;
-       /** Optional override for drawing the name. */
+       /** Optional override for drawing the name in the scene. */
        Boolean drawName;
+       /** Optional override for drawing the name on the minimap. */
+       Boolean drawMap;
 
        static NpcMatch parse(String config)
        {
@@ -56,16 +58,17 @@ class NpcMatch
                        return null;
                }
 
-               if (trimmed.startsWith("<") && trimmed.contains(">"))
+               if (trimmed.startsWith("<tag") && trimmed.contains(">"))
                {
                        int end = trimmed.indexOf('>');
-                       String attrsPart = trimmed.substring(1, end);
+                       String attrsPart = trimmed.substring("<tag".length(), end).trim();
                        String content = trimmed.substring(end + 1);
 
-                       if (content.endsWith("</col>"))
+                       if (!content.endsWith("</tag>"))
                        {
-                               content = content.substring(0, content.length() - "</col>".length());
+                               return null; // malformed tag
                        }
+                       content = content.substring(0, content.length() - "</tag>".length());
 
                        String pattern = Text.removeTags(content).trim();
                        if (pattern.isEmpty())
@@ -76,8 +79,9 @@ class NpcMatch
                        Integer npcId = null;
                        Color color = null;
                        Boolean drawName = null;
+                       Boolean drawMap = null;
 
-                       String[] attrs = attrsPart.split("\\s+");
+                       String[] attrs = attrsPart.isEmpty() ? new String[0] : attrsPart.split("\\s+");
                        for (String attr : attrs)
                        {
                                String[] kv = attr.split("=", 2);
@@ -88,7 +92,7 @@ class NpcMatch
 
                                switch (kv[0].toLowerCase())
                                {
-                                       case "col":
+                                       case "color":
                                                try
                                                {
                                                        color = ColorUtil.fromHex(kv[1]);
@@ -109,6 +113,9 @@ class NpcMatch
                                        case "drawname":
                                                drawName = Boolean.parseBoolean(kv[1]);
                                                break;
+                                       case "drawmap":
+                                               drawMap = Boolean.parseBoolean(kv[1]);
+                                               break;
                                }
                        }
 
@@ -124,7 +131,7 @@ class NpcMatch
                                return null;
                        }
 
-                       return new NpcMatch(pattern, npcId, color, drawName);
+                       return new NpcMatch(pattern, npcId, color, drawName, drawMap);
                }
 
                String pattern = Text.removeTags(trimmed).trim();
@@ -132,7 +139,7 @@ class NpcMatch
                {
                        return null;
                }
-               return new NpcMatch(pattern, null, null, null);
+               return new NpcMatch(pattern, null, null, null, null);
        }
 }
 
