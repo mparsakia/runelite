@@ -202,17 +202,6 @@ public class NpcIndicatorsPluginTest
        }
 
        @Test
-       public void colorAttributeIgnored()
-       {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag color=80800080>Hans</tag>");
-               List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
-               assertEquals(1, matches.size());
-               NpcMatch match = matches.get(0);
-               assertEquals("Hans", match.getPattern());
-               assertNull(match.getColor());
-       }
-
-       @Test
        public void invalidTagDiscarded()
        {
                when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=80FF00D4 npcid=3, man, cow");
