@@ -120,17 +120,17 @@ public class NpcIndicatorsPluginTest
                        "*at,\n" +
                        "Man,\n" +
                        "<col=FFFFFF>Woman</col>,\n" +
-                       "<tag color=80800080>Hans</tag>,\n" +
-                       "<tag color=FFFA9000 npcid=311></tag>,\n" +
+                       "<tag col=80800080>Hans</tag>,\n" +
+                       "<tag col=FFFA9000 npcid=311></tag>,\n" +
                        "<tag npcid=6773 drawname=false drawmap=false></tag>,\n" +
-                       "<tag color=FFFFFFFF npcid=306 drawname=true drawmap=true></tag>,\n" +
-                       "<tag color=FFCCCCCC drawname=false drawmap=true>Man</col>,\n" +
-                       "<tag color=FF2AAC00 npcid=8665 drawname=true drawmap=true></tag>,\n" +
-                       "<tag color=FFFF00CC drawname=true drawmap=false>Goblin</tag>,\n" +
-                       "<tag color=FF008000 npcid=3216 drawname=true drawmap=true></tag>,\n" +
-                       "<tag color=FF00FFFF npcid=3217 drawname=false drawmap=true></tag>,\n" +
-                       "<tag color=FF808000 npcid=3218 drawname=true drawmap=false></tag>,\n" +
-                       "<tag color=FFFF0000 npcid=2813 drawname=false drawmap=false></tag>,\n" +
+                       "<tag col=FFFFFFFF npcid=306 drawname=true drawmap=true></tag>,\n" +
+                       "<tag col=FFCCCCCC drawname=false drawmap=true>Man</col>,\n" +
+                       "<tag col=FF2AAC00 npcid=8665 drawname=true drawmap=true></tag>,\n" +
+                       "<tag col=FFFF00CC drawname=true drawmap=false>Goblin</tag>,\n" +
+                       "<tag col=FF008000 npcid=3216 drawname=true drawmap=true></tag>,\n" +
+                       "<tag col=FF00FFFF npcid=3217 drawname=false drawmap=true></tag>,\n" +
+                       "<tag col=FF808000 npcid=3218 drawname=true drawmap=false></tag>,\n" +
+                       "<tag col=FFFF0000 npcid=2813 drawname=false drawmap=false></tag>,\n" +
                        ",,,,";
                when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn(configStr);
                List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
@@ -191,7 +191,7 @@ public class NpcIndicatorsPluginTest
        @Test
        public void parseNameTag()
        {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag color=FFFFFF drawname=true>Man</tag>");
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=FFFFFF drawname=true>Man</tag>");
                List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
                assertEquals(1, matches.size());
                NpcMatch match = matches.get(0);
@@ -202,13 +202,14 @@ public class NpcIndicatorsPluginTest
        }
 
        @Test
-       public void parseColorAliases()
+       public void colorAttributeIgnored()
        {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag color=80800080>Hans</tag>,<tag col=80800080>Hans</tag>");
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag color=80800080>Hans</tag>");
                List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
-               assertEquals(2, matches.size());
-               assertEquals(ColorUtil.fromHex("80800080"), matches.get(0).getColor());
-               assertEquals(ColorUtil.fromHex("80800080"), matches.get(1).getColor());
+               assertEquals(1, matches.size());
+               NpcMatch match = matches.get(0);
+               assertEquals("Hans", match.getPattern());
+               assertNull(match.getColor());
        }
 
        @Test
@@ -258,7 +259,7 @@ public class NpcIndicatorsPluginTest
        @Test
        public void perNpcDrawNameOverrideTakesPrecedence()
        {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag color=00ffff drawname=true>Goblin</tag>");
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=00ffff drawname=true>Goblin</tag>");
                when(npcIndicatorsConfig.drawNames()).thenReturn(true);
 
                npcIndicatorsPlugin.rebuild();
@@ -279,7 +280,7 @@ public class NpcIndicatorsPluginTest
        @Test
        public void perNpcDrawMapOverrideTakesPrecedence()
        {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag color=00ffff drawmap=true>Goblin</tag>");
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=00ffff drawmap=true>Goblin</tag>");
                when(npcIndicatorsConfig.drawMinimapNames()).thenReturn(true);
 
                npcIndicatorsPlugin.rebuild();

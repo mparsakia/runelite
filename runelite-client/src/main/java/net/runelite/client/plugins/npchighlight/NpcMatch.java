@@ -101,9 +101,7 @@ class NpcMatch
 
                                switch (key)
                                {
-                                       case "color":
                                        case "col":
-                                       case "colour":
                                                try
                                                {
                                                        color = ColorUtil.fromHex(value);
