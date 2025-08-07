@@ -99,6 +99,7 @@ class NpcMatch
                                switch (kv[0].toLowerCase())
                                {
                                        case "color":
+                                       case "col":
                                                try
                                                {
                                                        color = ColorUtil.fromHex(kv[1]);
@@ -154,12 +155,10 @@ class NpcMatch
                        String pattern = Text.removeTags(content).trim();
                        if (pattern.isEmpty())
                        {
-                               pattern = null;
+                               return null; // no name to match
                        }
 
-                       Integer npcId = null;
                        Color color = null;
-                       Boolean drawName = null;
 
                        if (attrsPart.startsWith("="))
                        {
@@ -178,44 +177,10 @@ class NpcMatch
                                        catch (IllegalArgumentException ignored)
                                        {
                                        }
-
-                                       for (int i = 1; i < attrs.length; i++)
-                                       {
-                                               String[] kv = attrs[i].split("=", 2);
-                                               if (kv.length < 2)
-                                               {
-                                                       continue;
-                                               }
-                                               switch (kv[0].toLowerCase())
-                                               {
-                                                       case "npcid":
-                                                               try
-                                                               {
-                                                                       npcId = Integer.parseInt(kv[1]);
-                                                               }
-                                                               catch (NumberFormatException ignored)
-                                                               {
-                                                               }
-                                                               break;
-                                                       case "drawname":
-                                                               drawName = Boolean.parseBoolean(kv[1]);
-                                                               break;
-                                               }
-                                       }
                                }
                        }
 
-                       if (npcId != null)
-                       {
-                               pattern = null;
-                       }
-
-                       if (npcId == null && pattern == null)
-                       {
-                               return null;
-                       }
-
-                       return new NpcMatch(pattern, npcId, color, drawName, null);
+                       return new NpcMatch(pattern, null, color, null, null);
                }
                else if (trimmed.contains("<") || trimmed.contains(">"))
                {

@@ -110,7 +110,7 @@ public class NpcIndicatorsPluginTest
        @Test
        public void parseComplexList()
        {
-               String configStr = "Duc*, *at, <col=ffffff>Woman</col>, <tag color=FF0000 npcid=306 drawname=false drawmap=true></tag>, <tag color=2AAC00 npcid=8665 drawname=true drawmap=true></tag>, <tag color=000000, <tag color=FF00CC drawname=true drawmap=false>Goblin</tag>, <tag color=FA9000 npcid=311></tag>, tag</tag>,col=000000></col, <tag npcid=6773 drawname=false drawmap=false></tag>";
+               String configStr = "<tag col=000000,tag</tag>,col=000000></col, Duc*, *at, <col=FFFFFF>Woman</col>, <tag col=FA9000 npcid=311></tag>, <tag col=80FF00FF npcid=306 drawname=true drawmap=false></tag>, <tag col=CCCCCC drawname=false drawmap=true>Man</col>, <tag col=2AAC00 npcid=8665 drawname=true drawmap=true></tag>, <tag col=FF00CC drawname=true drawmap=false>Goblin</tag>, <tag npcid=6773 drawname=false drawmap=false></tag>";
                when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn(configStr);
                List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
                assertEquals(8, matches.size());
@@ -118,28 +118,28 @@ public class NpcIndicatorsPluginTest
                assertEquals("*at", matches.get(1).getPattern());
                NpcMatch m = matches.get(2);
                assertEquals("Woman", m.getPattern());
-               assertEquals(ColorUtil.fromHex("ffffff"), m.getColor());
+               assertEquals(ColorUtil.fromHex("FFFFFF"), m.getColor());
                m = matches.get(3);
                assertNull(m.getPattern());
-               assertEquals(Integer.valueOf(306), m.getNpcId());
-               assertEquals(ColorUtil.fromHex("FF0000"), m.getColor());
-               assertEquals(Boolean.FALSE, m.getDrawName());
-               assertEquals(Boolean.TRUE, m.getDrawMap());
+               assertEquals(Integer.valueOf(311), m.getNpcId());
+               assertEquals(ColorUtil.fromHex("FA9000"), m.getColor());
                m = matches.get(4);
+               assertNull(m.getPattern());
+               assertEquals(Integer.valueOf(306), m.getNpcId());
+               assertEquals(ColorUtil.fromHex("80FF00FF"), m.getColor());
+               assertEquals(Boolean.TRUE, m.getDrawName());
+               assertEquals(Boolean.FALSE, m.getDrawMap());
+               m = matches.get(5);
                assertNull(m.getPattern());
                assertEquals(Integer.valueOf(8665), m.getNpcId());
                assertEquals(ColorUtil.fromHex("2AAC00"), m.getColor());
                assertEquals(Boolean.TRUE, m.getDrawName());
                assertEquals(Boolean.TRUE, m.getDrawMap());
-               m = matches.get(5);
+               m = matches.get(6);
                assertEquals("Goblin", m.getPattern());
                assertEquals(ColorUtil.fromHex("FF00CC"), m.getColor());
                assertEquals(Boolean.TRUE, m.getDrawName());
                assertEquals(Boolean.FALSE, m.getDrawMap());
-               m = matches.get(6);
-               assertNull(m.getPattern());
-               assertEquals(Integer.valueOf(311), m.getNpcId());
-               assertEquals(ColorUtil.fromHex("FA9000"), m.getColor());
                m = matches.get(7);
                assertNull(m.getPattern());
                assertEquals(Integer.valueOf(6773), m.getNpcId());
@@ -151,35 +151,21 @@ public class NpcIndicatorsPluginTest
        @Test
        public void parseLegacyColTag()
        {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<col=FFFFFF drawname=true>Man</col>");
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<col=FFFFFF>Man</col>");
                List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
                assertEquals(1, matches.size());
                NpcMatch match = matches.get(0);
                assertEquals("Man", match.getPattern());
                assertNull(match.getNpcId());
                assertEquals(ColorUtil.fromHex("FFFFFF"), match.getColor());
-               assertEquals(Boolean.TRUE, match.getDrawName());
-               assertNull(match.getDrawMap());
-       }
-
-       @Test
-       public void parseLegacyColNpcId()
-       {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<col=80FF00D4 npcid=306 drawname=true></col>");
-               List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
-               assertEquals(1, matches.size());
-               NpcMatch match = matches.get(0);
-               assertNull(match.getPattern());
-               assertEquals(Integer.valueOf(306), match.getNpcId());
-               assertEquals(ColorUtil.fromHex("80FF00D4"), match.getColor());
-               assertEquals(Boolean.TRUE, match.getDrawName());
+               assertNull(match.getDrawName());
                assertNull(match.getDrawMap());
        }
 
        @Test
        public void parseNameTag()
        {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag color=FFFFFF drawname=true>Man</tag>");
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=FFFFFF drawname=true>Man</tag>");
                List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
                assertEquals(1, matches.size());
                NpcMatch match = matches.get(0);
@@ -192,46 +178,46 @@ public class NpcIndicatorsPluginTest
        @Test
        public void invalidTagDiscarded()
        {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag color=80FF00D4 npcid=3, man, cow");
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=80FF00D4 npcid=3, man, cow");
                List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
                assertEquals(2, matches.size());
                assertEquals("man", matches.get(0).getPattern());
                assertEquals("cow", matches.get(1).getPattern());
        }
 
-      @Test
-      public void parseAttributesNpcIdIgnoresText()
-      {
-              when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag color=00ffff npcid=1234 drawname=false>Rubble</tag>");
-              final List<NpcMatch> highlightedNpcs = npcIndicatorsPlugin.getHighlights();
-              assertEquals(1, highlightedNpcs.size());
-              NpcMatch match = highlightedNpcs.get(0);
-              assertNull(match.getPattern());
-              assertEquals(Integer.valueOf(1234), match.getNpcId());
-              assertEquals(ColorUtil.fromHex("00ffff"), match.getColor());
-              assertEquals(Boolean.FALSE, match.getDrawName());
-      }
+       @Test
+       public void parseAttributesNpcIdIgnoresText()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=00ffff npcid=1234 drawname=false>Rubble</tag>");
+               final List<NpcMatch> highlightedNpcs = npcIndicatorsPlugin.getHighlights();
+               assertEquals(1, highlightedNpcs.size());
+               NpcMatch match = highlightedNpcs.get(0);
+               assertNull(match.getPattern());
+               assertEquals(Integer.valueOf(1234), match.getNpcId());
+               assertEquals(ColorUtil.fromHex("00ffff"), match.getColor());
+               assertEquals(Boolean.FALSE, match.getDrawName());
+       }
 
-      @Test
-      public void highlightByNpcIdOverride()
-      {
-              when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag color=ff0000 npcid=1 drawname=true drawmap=false>Wrong</tag>");
-              when(npcIndicatorsConfig.drawNames()).thenReturn(false);
-              when(npcIndicatorsConfig.drawMinimapNames()).thenReturn(true);
+       @Test
+       public void highlightByNpcIdOverride()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=ff0000 npcid=1 drawname=true drawmap=false>Wrong</tag>");
+               when(npcIndicatorsConfig.drawNames()).thenReturn(false);
+               when(npcIndicatorsConfig.drawMinimapNames()).thenReturn(true);
 
-              npcIndicatorsPlugin.rebuild();
+               npcIndicatorsPlugin.rebuild();
 
-              NPC npc = mock(NPC.class);
-              when(npc.getName()).thenReturn("Any");
-              when(npc.getId()).thenReturn(1);
+               NPC npc = mock(NPC.class);
+               when(npc.getName()).thenReturn("Any");
+               when(npc.getId()).thenReturn(1);
 
-              npcIndicatorsPlugin.onNpcSpawned(new NpcSpawned(npc));
+               npcIndicatorsPlugin.onNpcSpawned(new NpcSpawned(npc));
 
-              HighlightedNpc highlighted = npcIndicatorsPlugin.getHighlightedNpcs().get(npc);
-              assertTrue(highlighted.isName());
-              assertFalse(highlighted.isNameOnMinimap());
-              assertEquals(ColorUtil.fromHex("ff0000"), highlighted.getHighlightColor());
-      }
+               HighlightedNpc highlighted = npcIndicatorsPlugin.getHighlightedNpcs().get(npc);
+               assertTrue(highlighted.isName());
+               assertFalse(highlighted.isNameOnMinimap());
+               assertEquals(ColorUtil.fromHex("ff0000"), highlighted.getHighlightColor());
+       }
 
        @Test
        public void perNpcDrawNameOverrideTakesPrecedence()

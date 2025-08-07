@@ -930,8 +930,8 @@ public class NpcIndicatorsPlugin extends Plugin
                Boolean drawNameOverride = getNpcDrawName(npcId);
                boolean drawName = drawNameOverride != null ? drawNameOverride :
                        match != null && match.getDrawName() != null ? match.getDrawName() : config.drawNames();
-               boolean drawMinimap = drawNameOverride != null ? drawNameOverride :
-                       match != null && match.getDrawMap() != null ? match.getDrawMap() : config.drawMinimapNames();
+               boolean drawMinimap = match != null && match.getDrawMap() != null ? match.getDrawMap() :
+                       (drawNameOverride != null ? drawNameOverride : config.drawMinimapNames());
 
                return HighlightedNpc.builder()
                        .npc(npc)
