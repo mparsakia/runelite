@@ -96,13 +96,17 @@ class NpcMatch
                                        continue;
                                }
 
-                               switch (kv[0].toLowerCase())
+                               String key = kv[0].toLowerCase();
+                               String value = kv[1];
+
+                               switch (key)
                                {
                                        case "color":
                                        case "col":
+                                       case "colour":
                                                try
                                                {
-                                                       color = ColorUtil.fromHex(kv[1]);
+                                                       color = ColorUtil.fromHex(value);
                                                }
                                                catch (IllegalArgumentException ignored)
                                                {
@@ -111,17 +115,17 @@ class NpcMatch
                                        case "npcid":
                                                try
                                                {
-                                                       npcId = Integer.parseInt(kv[1]);
+                                                       npcId = Integer.parseInt(value);
                                                }
                                                catch (NumberFormatException ignored)
                                                {
                                                }
                                                break;
                                        case "drawname":
-                                               drawName = Boolean.parseBoolean(kv[1]);
+                                               drawName = Boolean.parseBoolean(value);
                                                break;
                                        case "drawmap":
-                                               drawMap = Boolean.parseBoolean(kv[1]);
+                                               drawMap = Boolean.parseBoolean(value);
                                                break;
                                }
                        }
