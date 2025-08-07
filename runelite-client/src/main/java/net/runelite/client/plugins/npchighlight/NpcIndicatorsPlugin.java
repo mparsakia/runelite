@@ -326,7 +326,6 @@ public class NpcIndicatorsPlugin extends Plugin
                        {
                                idx = createTagColorMenu(idx, event.getTarget(), npc);
                                idx = createTagStyleMenu(idx, event.getTarget(), npc);
-                               idx = createNameVisibilityMenu(idx, event.getTarget(), npc);
                        }
                }
                else
@@ -470,49 +469,43 @@ public class NpcIndicatorsPlugin extends Plugin
                        .setOption("Tag style")
                        .setTarget(target)
                        .setType(MenuAction.RUNELITE);
-		Menu submenu = parent.createSubMenu();
+               Menu submenu = parent.createSubMenu();
 
-		String[] names = {"Hull", "Tile", "True tile", "South-west tile", "South-west true tile", "Outline"};
-		String[] styles = {STYLE_HULL, STYLE_TILE, STYLE_TRUE_TILE, STYLE_SW_TILE, STYLE_SW_TRUE_TILE, STYLE_OUTLINE};
-		assert names.length == styles.length;
-		for (int i = 0; i < names.length; ++i)
-		{
-			final String style = styles[i];
-			submenu.createMenuEntry(0)
-				.setOption(names[i])
-				.setType(MenuAction.RUNELITE)
-				.onClick(e ->
-				{
-					setNpcTagStyle(npc.getId(), style);
-					clientThread.invokeLater(this::rebuild);
-				});
-		}
+               String[] names = {"Hull", "Tile", "True tile", "South-west tile", "South-west true tile", "Outline"};
+               String[] styles = {STYLE_HULL, STYLE_TILE, STYLE_TRUE_TILE, STYLE_SW_TILE, STYLE_SW_TRUE_TILE, STYLE_OUTLINE};
+               assert names.length == styles.length;
+               for (int i = 0; i < names.length; ++i)
+               {
+                       final String style = styles[i];
+                       submenu.createMenuEntry(0)
+                               .setOption(names[i])
+                               .setType(MenuAction.RUNELITE)
+                               .onClick(e ->
+                               {
+                                       setNpcTagStyle(npc.getId(), style);
+                                       clientThread.invokeLater(this::rebuild);
+                               });
+               }
 
-		if (getNpcTagStyle(npc.getId()) != null)
-		{
-			submenu.createMenuEntry(0)
-				.setOption("Reset")
-				.setType(MenuAction.RUNELITE)
-				.onClick(e ->
-				{
-					unsetNpcTagStyle(npc.getId());
-					clientThread.invokeLater(this::rebuild);
-				});
-		}
-
-               return idx;
-       }
-
-       private int createNameVisibilityMenu(int idx, String target, NPC npc)
-       {
                NpcMatch match = findHighlightFor(npc);
-               Boolean override = getNpcDrawName(npc.getId());
-               boolean drawName = override != null ? override :
+               Boolean nameOverride = getNpcDrawName(npc.getId());
+               Boolean mapOverride = getNpcDrawMap(npc.getId());
+               boolean drawName = nameOverride != null ? nameOverride :
                        match != null && match.getDrawName() != null ? match.getDrawName() : config.drawNames();
+               boolean drawMap = mapOverride != null ? mapOverride :
+                       match != null && match.getDrawMap() != null ? match.getDrawMap() : config.drawMinimapNames();
 
-               client.createMenuEntry(idx--)
+               submenu.createMenuEntry(0)
+                       .setOption(drawMap ? "Hide minimap name" : "Show minimap name")
+                       .setType(MenuAction.RUNELITE)
+                       .onClick(e ->
+                       {
+                               setNpcDrawMap(npc.getId(), !drawMap);
+                               clientThread.invokeLater(this::rebuild);
+                       });
+
+               submenu.createMenuEntry(0)
                        .setOption(drawName ? "Hide name" : "Show name")
-                       .setTarget(target)
                        .setType(MenuAction.RUNELITE)
                        .onClick(e ->
                        {
@@ -520,11 +513,23 @@ public class NpcIndicatorsPlugin extends Plugin
                                clientThread.invokeLater(this::rebuild);
                        });
 
+               if (getNpcTagStyle(npc.getId()) != null)
+               {
+                       submenu.createMenuEntry(0)
+                               .setOption("Reset")
+                               .setType(MenuAction.RUNELITE)
+                               .onClick(e ->
+                               {
+                                       unsetNpcTagStyle(npc.getId());
+                                       clientThread.invokeLater(this::rebuild);
+                               });
+               }
+
                return idx;
        }
 
-	private void tag(MenuEntry entry)
-	{
+       private void tag(MenuEntry entry)
+       {
 		final int id = entry.getIdentifier();
 		WorldView wv = client.getTopLevelWorldView();
 		final NPC npc = wv.npcs().byIndex(id);
@@ -928,10 +933,11 @@ public class NpcIndicatorsPlugin extends Plugin
 			);
 
                Boolean drawNameOverride = getNpcDrawName(npcId);
+               Boolean drawMapOverride = getNpcDrawMap(npcId);
                boolean drawName = drawNameOverride != null ? drawNameOverride :
                        match != null && match.getDrawName() != null ? match.getDrawName() : config.drawNames();
-               boolean drawMinimap = match != null && match.getDrawMap() != null ? match.getDrawMap() :
-                       (drawNameOverride != null ? drawNameOverride : config.drawMinimapNames());
+               boolean drawMinimap = drawMapOverride != null ? drawMapOverride :
+                       match != null && match.getDrawMap() != null ? match.getDrawMap() : config.drawMinimapNames();
 
                return HighlightedNpc.builder()
                        .npc(npc)
@@ -992,10 +998,10 @@ public class NpcIndicatorsPlugin extends Plugin
 		configManager.unsetConfiguration(NpcIndicatorsConfig.GROUP, "tagstyle_" + npcId);
 	}
 
-        private String getNpcTagStyle(int npcId)
-        {
-                return configManager.getConfiguration(NpcIndicatorsConfig.GROUP, "tagstyle_" + npcId);
-        }
+       private String getNpcTagStyle(int npcId)
+       {
+               return configManager.getConfiguration(NpcIndicatorsConfig.GROUP, "tagstyle_" + npcId);
+       }
 
        private void setNpcDrawName(int npcId, boolean draw)
        {
@@ -1005,6 +1011,16 @@ public class NpcIndicatorsPlugin extends Plugin
        private Boolean getNpcDrawName(int npcId)
        {
                return configManager.getConfiguration(NpcIndicatorsConfig.GROUP, "drawname_" + npcId, Boolean.class);
+       }
+
+       private void setNpcDrawMap(int npcId, boolean draw)
+       {
+               configManager.setConfiguration(NpcIndicatorsConfig.GROUP, "drawmap_" + npcId, draw);
+       }
+
+       private Boolean getNpcDrawMap(int npcId)
+       {
+               return configManager.getConfiguration(NpcIndicatorsConfig.GROUP, "drawmap_" + npcId, Boolean.class);
        }
 
 	/**
