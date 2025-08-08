@@ -43,8 +43,11 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.menus.TestMenuEntry;
 import net.runelite.client.ui.components.colorpicker.ColorPickerManager;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.util.ColorUtil;
+import net.runelite.client.game.npcoverlay.HighlightedNpc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
@@ -92,17 +95,173 @@ public class NpcIndicatorsPluginTest
 	}
 
 	@Test
-	public void getHighlights()
-	{
-		when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("goblin, , zulrah   , *wyvern, ,");
-		final List<String> highlightedNpcs = npcIndicatorsPlugin.getHighlights();
-		assertEquals("Length of parsed NPCs is incorrect", 3, highlightedNpcs.size());
+       public void getHighlights()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("goblin, , zulrah   , *wyvern, ,");
+               final List<NpcMatch> highlightedNpcs = npcIndicatorsPlugin.getHighlights();
+               assertEquals("Length of parsed NPCs is incorrect", 3, highlightedNpcs.size());
 
-		final Iterator<String> iterator = highlightedNpcs.iterator();
-		assertEquals("goblin", iterator.next());
-		assertEquals("zulrah", iterator.next());
-		assertEquals("*wyvern", iterator.next());
-	}
+               final Iterator<NpcMatch> iterator = highlightedNpcs.iterator();
+               assertEquals("goblin", iterator.next().getPattern());
+               assertEquals("zulrah", iterator.next().getPattern());
+               assertEquals("*wyvern", iterator.next().getPattern());
+       }
+
+       @Test
+       public void parseComplexList()
+       {
+               String configStr = ",,,,\n" +
+                       "<tag col=000000,tag</tag>,col=000000></col,</col,</col,>>>,>,\n" +
+                       "<tag></tag>,\n" +
+                       "<col></col>,\n" +
+                       "<tag color=000000></tag>,\n" +
+                       "<col=000000></col>,\n" +
+                       "Duc*, \n" +
+                       "*at,\n" +
+                       "Man,\n" +
+                       "<col=FFFFFF>Woman</col>,\n" +
+                       "<tag col=80800080>Hans</tag>,\n" +
+                       "<tag col=FFFA9000 npcid=311></tag>,\n" +
+                       "<tag npcid=6773 drawname=false drawmap=false></tag>,\n" +
+                       "<tag col=FFFFFFFF npcid=306 drawname=true drawmap=true></tag>,\n" +
+                       "<tag col=FFCCCCCC drawname=false drawmap=true>Man</col>,\n" +
+                       "<tag col=FF2AAC00 npcid=8665 drawname=true drawmap=true></tag>,\n" +
+                       "<tag col=FFFF00CC drawname=true drawmap=false>Goblin</tag>,\n" +
+                       "<tag col=FF008000 npcid=3216 drawname=true drawmap=true></tag>,\n" +
+                       "<tag col=FF00FFFF npcid=3217 drawname=false drawmap=true></tag>,\n" +
+                       "<tag col=FF808000 npcid=3218 drawname=true drawmap=false></tag>,\n" +
+                       "<tag col=FFFF0000 npcid=2813 drawname=false drawmap=false></tag>,\n" +
+                       ",,,,";
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn(configStr);
+               List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
+               assertEquals(14, matches.size());
+
+               assertTrue(matches.stream().anyMatch(m -> "Duc*".equals(m.getPattern())));
+               assertTrue(matches.stream().anyMatch(m -> "*at".equals(m.getPattern())));
+               assertTrue(matches.stream().anyMatch(m -> "Man".equals(m.getPattern()) && m.getColor() == null));
+
+               NpcMatch woman = matches.stream().filter(m -> "Woman".equals(m.getPattern())).findFirst().orElse(null);
+               assertEquals(ColorUtil.fromHex("FFFFFF"), woman.getColor());
+
+               NpcMatch hans = matches.stream().filter(m -> "Hans".equals(m.getPattern())).findFirst().orElse(null);
+               assertEquals(ColorUtil.fromHex("80800080"), hans.getColor());
+
+               NpcMatch tutor = matches.stream().filter(m -> Integer.valueOf(311).equals(m.getNpcId())).findFirst().orElse(null);
+               assertEquals(ColorUtil.fromHex("FFFA9000"), tutor.getColor());
+
+               NpcMatch doomsayer = matches.stream().filter(m -> Integer.valueOf(6773).equals(m.getNpcId())).findFirst().orElse(null);
+               assertEquals(Boolean.FALSE, doomsayer.getDrawName());
+               assertEquals(Boolean.FALSE, doomsayer.getDrawMap());
+
+               NpcMatch guide = matches.stream().filter(m -> Integer.valueOf(306).equals(m.getNpcId())).findFirst().orElse(null);
+               assertEquals(ColorUtil.fromHex("FFFFFFFF"), guide.getColor());
+               assertEquals(Boolean.TRUE, guide.getDrawName());
+               assertEquals(Boolean.TRUE, guide.getDrawMap());
+
+               NpcMatch arthur = matches.stream().filter(m -> Integer.valueOf(8665).equals(m.getNpcId())).findFirst().orElse(null);
+               assertEquals(ColorUtil.fromHex("FF2AAC00"), arthur.getColor());
+               assertEquals(Boolean.TRUE, arthur.getDrawName());
+               assertEquals(Boolean.TRUE, arthur.getDrawMap());
+
+               NpcMatch goblin = matches.stream().filter(m -> "Goblin".equals(m.getPattern())).findFirst().orElse(null);
+               assertEquals(ColorUtil.fromHex("FFFF00CC"), goblin.getColor());
+               assertEquals(Boolean.TRUE, goblin.getDrawName());
+               assertEquals(Boolean.FALSE, goblin.getDrawMap());
+
+               assertTrue(matches.stream().anyMatch(m -> Integer.valueOf(3216).equals(m.getNpcId())));
+               assertTrue(matches.stream().anyMatch(m -> Integer.valueOf(3217).equals(m.getNpcId())));
+               assertTrue(matches.stream().anyMatch(m -> Integer.valueOf(3218).equals(m.getNpcId())));
+               assertTrue(matches.stream().anyMatch(m -> Integer.valueOf(2813).equals(m.getNpcId())));
+       }
+
+       @Test
+       public void parseLegacyColTag()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<col=FFFFFF>Man</col>");
+               List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
+               assertEquals(1, matches.size());
+               NpcMatch match = matches.get(0);
+               assertEquals("Man", match.getPattern());
+               assertNull(match.getNpcId());
+               assertEquals(ColorUtil.fromHex("FFFFFF"), match.getColor());
+               assertNull(match.getDrawName());
+               assertNull(match.getDrawMap());
+       }
+
+       @Test
+       public void parseNameTag()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=FFFFFF drawname=true>Man</tag>");
+               List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
+               assertEquals(1, matches.size());
+               NpcMatch match = matches.get(0);
+               assertEquals("Man", match.getPattern());
+               assertNull(match.getNpcId());
+               assertEquals(ColorUtil.fromHex("FFFFFF"), match.getColor());
+               assertEquals(Boolean.TRUE, match.getDrawName());
+       }
+
+       @Test
+       public void invalidTagDiscarded()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=80FF00D4 npcid=3, man, cow");
+               List<NpcMatch> matches = npcIndicatorsPlugin.getHighlights();
+               assertEquals(2, matches.size());
+               assertEquals("man", matches.get(0).getPattern());
+               assertEquals("cow", matches.get(1).getPattern());
+       }
+
+       @Test
+       public void parseAttributesNpcIdIgnoresText()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=00ffff npcid=1234 drawname=false>Rubble</tag>");
+               final List<NpcMatch> highlightedNpcs = npcIndicatorsPlugin.getHighlights();
+               assertEquals(1, highlightedNpcs.size());
+               NpcMatch match = highlightedNpcs.get(0);
+               assertNull(match.getPattern());
+               assertEquals(Integer.valueOf(1234), match.getNpcId());
+               assertEquals(ColorUtil.fromHex("00ffff"), match.getColor());
+               assertEquals(Boolean.FALSE, match.getDrawName());
+       }
+
+       @Test
+       public void highlightByNpcIdOverride()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=ff0000 npcid=1 drawname=true drawmap=false>Wrong</tag>");
+               when(npcIndicatorsConfig.drawNames()).thenReturn(false);
+               when(npcIndicatorsConfig.drawMinimapNames()).thenReturn(true);
+
+               npcIndicatorsPlugin.rebuild();
+
+               NPC npc = mock(NPC.class);
+               when(npc.getName()).thenReturn("Any");
+               when(npc.getId()).thenReturn(1);
+
+               npcIndicatorsPlugin.onNpcSpawned(new NpcSpawned(npc));
+
+               HighlightedNpc highlighted = npcIndicatorsPlugin.getHighlightedNpcs().get(npc);
+               assertTrue(highlighted.isName());
+               assertFalse(highlighted.isNameOnMinimap());
+               assertEquals(ColorUtil.fromHex("ff0000"), highlighted.getHighlightColor());
+       }
+
+       @Test
+       public void tagByIdRespectsNameVisibility()
+       {
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag npcid=306 drawname=false drawmap=true></tag>");
+
+               npcIndicatorsPlugin.rebuild();
+
+               NPC npc = mock(NPC.class);
+               when(npc.getName()).thenReturn("Lumbridge Guide");
+               when(npc.getId()).thenReturn(306);
+
+               npcIndicatorsPlugin.onNpcSpawned(new NpcSpawned(npc));
+
+               HighlightedNpc highlighted = npcIndicatorsPlugin.getHighlightedNpcs().get(npc);
+               assertFalse(highlighted.isName());
+               assertTrue(highlighted.isNameOnMinimap());
+       }
 
 	@Test
 	public void testDeadNpcMenuHighlight()
