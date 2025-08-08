@@ -26,7 +26,6 @@
 package net.runelite.client.plugins.npchighlight;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.MoreObjects;
 import com.google.inject.Provides;
 import java.awt.Color;
 import java.time.Instant;
@@ -487,32 +486,6 @@ public class NpcIndicatorsPlugin extends Plugin
                                });
                }
 
-               NpcMatch match = findHighlightFor(npc);
-               Boolean nameOverride = getNpcDrawName(npc.getId());
-               Boolean mapOverride = getNpcDrawMap(npc.getId());
-               boolean drawName = nameOverride != null ? nameOverride :
-                       match != null && match.getDrawName() != null ? match.getDrawName() : config.drawNames();
-               boolean drawMap = mapOverride != null ? mapOverride :
-                       match != null && match.getDrawMap() != null ? match.getDrawMap() : config.drawMinimapNames();
-
-               submenu.createMenuEntry(0)
-                       .setOption(drawMap ? "Hide minimap name" : "Show minimap name")
-                       .setType(MenuAction.RUNELITE)
-                       .onClick(e ->
-                       {
-                               setNpcDrawMap(npc.getId(), !drawMap);
-                               clientThread.invokeLater(this::rebuild);
-                       });
-
-               submenu.createMenuEntry(0)
-                       .setOption(drawName ? "Hide name" : "Show name")
-                       .setType(MenuAction.RUNELITE)
-                       .onClick(e ->
-                       {
-                               setNpcDrawName(npc.getId(), !drawName);
-                               clientThread.invokeLater(this::rebuild);
-                       });
-
                if (getNpcTagStyle(npc.getId()) != null)
                {
                        submenu.createMenuEntry(0)
@@ -927,17 +900,21 @@ public class NpcIndicatorsPlugin extends Plugin
 			outline = config.highlightOutline();
 		}
 
-			Color highlightColor = MoreObjects.firstNonNull(
-				getNpcHighlightColor(npcId),
-				match != null && match.getColor() != null ? match.getColor() : config.highlightColor()
-			);
+               Color highlightColor = getNpcHighlightColor(npcId);
+               if (highlightColor == null && match != null)
+               {
+                       highlightColor = match.getColor();
+               }
+               if (highlightColor == null)
+               {
+                       highlightColor = config.highlightColor();
+               }
 
-               Boolean drawNameOverride = getNpcDrawName(npcId);
-               Boolean drawMapOverride = getNpcDrawMap(npcId);
-               boolean drawName = drawNameOverride != null ? drawNameOverride :
-                       match != null && match.getDrawName() != null ? match.getDrawName() : config.drawNames();
-               boolean drawMinimap = drawMapOverride != null ? drawMapOverride :
-                       match != null && match.getDrawMap() != null ? match.getDrawMap() : config.drawMinimapNames();
+               Boolean nameFlag = match != null ? match.getDrawName() : null;
+               boolean drawName = nameFlag != null ? nameFlag : config.drawNames();
+
+               Boolean mapFlag = match != null ? match.getDrawMap() : null;
+               boolean drawMinimap = mapFlag != null ? mapFlag : config.drawMinimapNames();
 
                return HighlightedNpc.builder()
                        .npc(npc)
@@ -1001,26 +978,6 @@ public class NpcIndicatorsPlugin extends Plugin
        private String getNpcTagStyle(int npcId)
        {
                return configManager.getConfiguration(NpcIndicatorsConfig.GROUP, "tagstyle_" + npcId);
-       }
-
-       private void setNpcDrawName(int npcId, boolean draw)
-       {
-               configManager.setConfiguration(NpcIndicatorsConfig.GROUP, "drawname_" + npcId, draw);
-       }
-
-       private Boolean getNpcDrawName(int npcId)
-       {
-               return configManager.getConfiguration(NpcIndicatorsConfig.GROUP, "drawname_" + npcId, Boolean.class);
-       }
-
-       private void setNpcDrawMap(int npcId, boolean draw)
-       {
-               configManager.setConfiguration(NpcIndicatorsConfig.GROUP, "drawmap_" + npcId, draw);
-       }
-
-       private Boolean getNpcDrawMap(int npcId)
-       {
-               return configManager.getConfiguration(NpcIndicatorsConfig.GROUP, "drawmap_" + npcId, Boolean.class);
        }
 
 	/**

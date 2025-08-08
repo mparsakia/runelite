@@ -246,44 +246,21 @@ public class NpcIndicatorsPluginTest
        }
 
        @Test
-       public void perNpcDrawNameOverrideTakesPrecedence()
+       public void tagByIdRespectsNameVisibility()
        {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=00ffff drawname=true>Goblin</tag>");
-               when(npcIndicatorsConfig.drawNames()).thenReturn(true);
+               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag npcid=306 drawname=false drawmap=true></tag>");
 
                npcIndicatorsPlugin.rebuild();
 
-               // simulate context-menu override
-               when(configManager.getConfiguration(NpcIndicatorsConfig.GROUP, "drawname_1", Boolean.class)).thenReturn(false);
-
                NPC npc = mock(NPC.class);
-               when(npc.getName()).thenReturn("Goblin");
-               when(npc.getId()).thenReturn(1);
+               when(npc.getName()).thenReturn("Lumbridge Guide");
+               when(npc.getId()).thenReturn(306);
 
                npcIndicatorsPlugin.onNpcSpawned(new NpcSpawned(npc));
 
                HighlightedNpc highlighted = npcIndicatorsPlugin.getHighlightedNpcs().get(npc);
                assertFalse(highlighted.isName());
-       }
-
-       @Test
-       public void perNpcDrawMapOverrideTakesPrecedence()
-       {
-               when(npcIndicatorsConfig.getNpcToHighlight()).thenReturn("<tag col=00ffff drawmap=true>Goblin</tag>");
-               when(npcIndicatorsConfig.drawMinimapNames()).thenReturn(true);
-
-               npcIndicatorsPlugin.rebuild();
-
-               when(configManager.getConfiguration(NpcIndicatorsConfig.GROUP, "drawmap_1", Boolean.class)).thenReturn(false);
-
-               NPC npc = mock(NPC.class);
-               when(npc.getName()).thenReturn("Goblin");
-               when(npc.getId()).thenReturn(1);
-
-               npcIndicatorsPlugin.onNpcSpawned(new NpcSpawned(npc));
-
-               HighlightedNpc highlighted = npcIndicatorsPlugin.getHighlightedNpcs().get(npc);
-               assertFalse(highlighted.isNameOnMinimap());
+               assertTrue(highlighted.isNameOnMinimap());
        }
 
 	@Test
