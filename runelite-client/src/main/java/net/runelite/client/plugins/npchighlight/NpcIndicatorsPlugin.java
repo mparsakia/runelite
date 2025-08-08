@@ -321,12 +321,8 @@ public class NpcIndicatorsPlugin extends Plugin
                                        .onClick(this::tag);
                        }
 
-                       // Add tag options only if the npc is currently tagged or has overrides
-                       if (manuallyTagged || nameMatch || wildcardMatch || idMatch
-                               || getNpcHighlightColor(npc.getId()) != null
-                               || getNpcTagStyle(npc.getId()) != null
-                               || getNpcDrawName(npc.getId()) != null
-                               || getNpcDrawMap(npc.getId()) != null)
+                       // Add tag options only if the npc is currently tagged
+                       if (manuallyTagged || nameMatch || wildcardMatch || idMatch)
                        {
                                idx = createTagColorMenu(idx, event.getTarget(), npc);
                                idx = createTagStyleMenu(idx, event.getTarget(), npc);
